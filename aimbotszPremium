@@ -1,0 +1,222 @@
+-- [[ SZ PREMIUM - ULTRA SEXY ADMIN PANEL V6 - ESP FIXED ]] --
+-- Put this in a LocalScript inside StarterGui
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- [[ SETTINGS ]] --
+local Settings = {
+	Aimbot = false,
+	ESP = false,
+	Dodge = false,
+	AntiAim = false, 
+	Smoothing = 0.1,
+	FOV = 300,
+	Prediction = 0.15,
+	MenuKey = Enum.KeyCode.K,
+	AccentColor = Color3.fromRGB(0, 255, 255),
+	Visible = true,
+	CurrentColorIndex = 1,
+	ESPColors = {
+		Color3.fromRGB(0, 255, 255), -- Cyan
+		Color3.fromRGB(255, 0, 255), -- Pink
+		Color3.fromRGB(0, 255, 0),   -- Green
+		Color3.fromRGB(255, 255, 0), -- Yellow
+		Color3.fromRGB(255, 0, 0)    -- Red
+	}
+}
+
+-- [[ UI CONSTRUCTION ]] --
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PremiumAdminPanel"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local UIGradient = Instance.new("UIGradient")
+local UIStroke = Instance.new("UIStroke")
+local Title = Instance.new("TextLabel")
+local Holder = Instance.new("Frame")
+local UIListLayout = Instance.new("UIListLayout")
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.Position = UDim2.new(0.5, -110, 0.4, -140)
+MainFrame.Size = UDim2.new(0, 220, 0, 380) 
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true 
+
+UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.Parent = MainFrame
+
+UIStroke.Color = Settings.AccentColor
+UIStroke.Thickness = 2
+UIStroke.Transparency = 0.6
+UIStroke.Parent = MainFrame
+
+UIGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 40, 55)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 15))
+})
+UIGradient.Rotation = 45
+UIGradient.Parent = MainFrame
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.BackgroundTransparency = 1
+Title.Text = "SZ PREMIUM"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.TextColor3 = Settings.AccentColor
+
+Holder.Name = "Holder"
+Holder.Parent = MainFrame
+Holder.BackgroundTransparency = 1
+Holder.Position = UDim2.new(0, 15, 0, 60)
+Holder.Size = UDim2.new(1, -30, 1, -75)
+
+UIListLayout.Parent = Holder
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- [[ BUTTON CREATOR ]] --
+local function AddButton(name, settingKey, isColorSwitcher)
+	local Btn = Instance.new("TextButton")
+	local BtnCorner = Instance.new("UICorner")
+	local BtnStroke = Instance.new("UIStroke")
+	
+	Btn.Parent = Holder
+	Btn.Size = UDim2.new(1, 0, 0, 42)
+	Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	Btn.Text = isColorSwitcher and "CHANGE COLOR" or (name .. ": OFF")
+	Btn.Font = Enum.Font.GothamSemibold
+	Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+	Btn.TextSize = 13
+	Btn.AutoButtonColor = false
+	
+	BtnCorner.CornerRadius = UDim.new(0, 10)
+	BtnCorner.Parent = Btn
+	BtnStroke.Color = Color3.fromRGB(60, 60, 75)
+	BtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	BtnStroke.Parent = Btn
+
+	Btn.MouseButton1Click:Connect(function()
+		if isColorSwitcher then
+			Settings.CurrentColorIndex = Settings.CurrentColorIndex % #Settings.ESPColors + 1
+			local newCol = Settings.ESPColors[Settings.CurrentColorIndex]
+			Settings.AccentColor = newCol
+			TweenService:Create(UIStroke, TweenInfo.new(0.3), {Color = newCol}):Play()
+			TweenService:Create(Title, TweenInfo.new(0.3), {TextColor3 = newCol}):Play()
+			for _, p in pairs(Players:GetPlayers()) do
+				if p.Character and p.Character:FindFirstChild("AdminHighlight") then
+					p.Character.AdminHighlight.FillColor = newCol
+				end
+			end
+		else
+			Settings[settingKey] = not Settings[settingKey]
+			Btn.Text = name .. (Settings[settingKey] and ": ON" or ": OFF")
+			local targetCol = Settings[settingKey] and Color3.fromRGB(0, 80, 80) or Color3.fromRGB(30, 30, 40)
+			TweenService:Create(Btn, TweenInfo.new(0.3), {BackgroundColor3 = targetCol}):Play()
+			
+			if settingKey == "ESP" then
+				for _, p in pairs(Players:GetPlayers()) do
+					if p.Character and p.Character:FindFirstChild("AdminHighlight") then
+						p.Character.AdminHighlight.Enabled = Settings.ESP
+					end
+				end
+			end
+		end
+	end)
+end
+
+AddButton("AIMBOT", "Aimbot")
+AddButton("PLAYER ESP", "ESP")
+AddButton("LEGIT DODGE", "Dodge") 
+AddButton("ANTI AIM", "AntiAim") 
+AddButton("ESP COLOR", nil, true)
+
+-- [[ CORE LOGIC: AIMBOT ]] --
+RunService.RenderStepped:Connect(function()
+	if Settings.Aimbot and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+		local target, closestDist = nil, Settings.FOV
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+				local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+				if onScreen then
+					local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
+					if mag < closestDist then
+						target = p
+						closestDist = mag
+					end
+				end
+			end
+		end
+		
+		if target and target.Character then
+			local predictedPos = target.Character.Head.Position + (target.Character.HumanoidRootPart.Velocity * Settings.Prediction)
+			Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, predictedPos), Settings.Smoothing)
+		end
+	end
+end)
+
+-- [[ CORE LOGIC: MOVEMENT & ANTI-AIM ]] --
+local t = 0
+RunService.Heartbeat:Connect(function(dt)
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = LocalPlayer.Character.HumanoidRootPart
+		local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+		
+		if Settings.Dodge and hum and hum.MoveDirection.Magnitude > 0 then
+			t = t + dt * 12
+			local sway = Vector3.new(math.sin(t) * 1.5, 0, math.cos(t) * 1.5)
+			hum:Move(hum.MoveDirection + sway, false)
+		end
+		
+		if Settings.AntiAim then
+			local jitter = math.random(-10, 10) / 100
+			hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(60), 0) * CFrame.new(jitter, 0, jitter)
+		end
+	end
+end)
+
+-- [[ CORE LOGIC: PERSISTENT ESP (FIXED) ]] --
+local function CreateESP(p)
+	local function setup(char)
+		-- Sicherstellen, dass das Highlight nicht mehrfach existiert
+		local old = char:FindFirstChild("AdminHighlight")
+		if old then old:Destroy() end
+		
+		-- Warten bis Charakter bereit ist
+		task.wait(0.1)
+		
+		local h = Instance.new("Highlight")
+		h.Name = "AdminHighlight"
+		h.FillColor = Settings.AccentColor
+		h.OutlineColor = Color3.new(1,1,1)
+		h.FillTransparency = 0.5
+		h.Enabled = Settings.ESP
+		h.Parent = char
+	end
+	
+	p.CharacterAdded:Connect(setup)
+	if p.Character then setup(p.Character) end
+end
+
+Players.PlayerAdded:Connect(CreateESP)
+for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then CreateESP(p) end end
+
+-- [[ KEYBIND ]] --
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == Settings.MenuKey then
+		Settings.Visible = not Settings.Visible
+		MainFrame.Visible = Settings.Visible
+	end
+end)
