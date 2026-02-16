@@ -39,7 +39,7 @@ ApplyBypass()
 local function StartScript()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     local Window = Rayfield:CreateWindow({
-       Name = "⚜️Sz Premium Hub⚜️ by @_sz666_    on dc",
+       Name = "⚜️Sz Premium Hub⚜️ by @champ_326    on dc",
        LoadingTitle = "Massive Boost System",
        LoadingSubtitle = "By 666",
        ConfigurationSaving = {
