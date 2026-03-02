@@ -7,7 +7,7 @@ local Logins = {
     ["User1"] = "Login55",
     ["Tester"] = "Passwort1",
     ["Guest"] = "Guest2025"
-["777"] = "777",}
+}
 
 -- --- ANTI-CHEAT BYPASS ---
 local function ApplyBypass()
